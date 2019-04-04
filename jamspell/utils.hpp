@@ -54,11 +54,13 @@ private:
 };
 
 std::string LoadFile(const std::string& fileName);
+void SaveFile(const std::string& fileName, const std::string& data);
 std::wstring UTF8ToWide(const std::string& text);
 std::string WideToUTF8(const std::wstring& text);
 uint64_t GetCurrentTimeMs();
 void ToLower(std::wstring& text);
 wchar_t MakeUpperIfRequired(wchar_t orig, wchar_t sample);
 uint16_t CityHash16(const std::string& str);
+uint16_t CityHash16(const char* str, size_t size);
 
 } // NJamSpell

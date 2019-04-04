@@ -5,13 +5,13 @@
 [travis-image]: https://travis-ci.org/bakwc/JamSpell.svg?branch=master
 [travis]: https://travis-ci.org/bakwc/JamSpell
 
-[release-image]: https://img.shields.io/badge/release-0.0.9-blue.svg?style=flat
+[release-image]: https://img.shields.io/badge/release-0.0.11-blue.svg?style=flat
 [releases]: https://github.com/bakwc/JamSpell/releases
 
 JamSpell is a spell checking library with following features:
 
 - **accurate** - it consider words surroundings (context) for better correction
-- **fast** - near 2K words per second
+- **fast** - near 5K words per second
 - **multi-language** - it's written in C++ and available for many languages with swig bindings
 
 ## Content
@@ -20,6 +20,7 @@ JamSpell is a spell checking library with following features:
   - [Python](#python)
   - [C++](#c)
   - [Other languages](#other-languages)
+  - [HTTP API](#http-api)
 - [Train](#train)
 
 ## Benchmarks
@@ -42,7 +43,7 @@ JamSpell is a spell checking library with following features:
     <td>79.53%</td>
     <td>84.10%</td>
     <td>0.64%</td>
-    <td>1833</td>
+    <td>4854</td>
   </tr>
   <tr>
     <td>Norvig</td>
@@ -103,7 +104,7 @@ To ensure that our model is not too overfitted for wikipedia+news we checked it 
     <td>72.03%</td>
     <td>79.73%</td>
     <td>0.50%</td>
-    <td>1764</td>
+    <td>5524</td>
   </tr>
   <tr>
     <td>Norvig</td>
@@ -140,7 +141,7 @@ More details about reproducing available in "[Train](#train)" section.
 ### Python
 1. Install ```swig3``` (usually it is in your distro package manager)
 
-2. Install ```jamspel```:
+2. Install ```jamspell```:
 ```bash
 pip install jamspell
 ```
@@ -192,6 +193,73 @@ int main(int argc, const char** argv) {
 ### Other languages
 You can generate extensions for other languages using [swig tutorial](http://www.swig.org/tutorial.html). The swig interface file is `jamspell.i`. Pull requests with build scripts are welcome.
 
+## HTTP API
+* Install ```cmake```
+
+* Clone and build jamspell (it includes http server):
+```bash
+git clone https://github.com/bakwc/JamSpell.git
+cd JamSpell
+mkdir build
+cd build
+cmake ..
+make
+```
+* [Download](#download-models) or [train](#train) language model
+* Run http server:
+```bash
+./web_server/web_server en.bin localhost 8080
+```
+* **GET** Request example:
+```bash
+$ curl "http://localhost:8080/fix?text=I am the begt spell cherken"
+I am the best spell checker
+```
+* **POST** Request example
+```bash
+$ curl -d "I am the begt spell cherken" http://localhost:8080/fix
+I am the best spell checker
+```
+* Candidate example
+```bash
+curl "http://localhost:8080/candidates?text=I am the begt spell cherken"
+# or
+curl -d "I am the begt spell cherken" http://localhost:8080/candidates
+```
+```javascript
+{
+    "results": [
+        {
+            "candidates": [
+                "best",
+                "beat",
+                "belt",
+                "bet",
+                "bent",
+                "beet",
+                "beit"
+            ],
+            "len": 4,
+            "pos_from": 9
+        },
+        {
+            "candidates": [
+                "checker",
+                "chicken",
+                "checked",
+                "wherein",
+                "coherent",
+                "cheered",
+                "cherokee"
+            ],
+            "len": 7,
+            "pos_from": 20
+        }
+    ]
+}
+```
+Here `pos_from` - misspelled word first letter position, `len` - misspelled word len
+
 ## Train
 To train custom model you need:
 
@@ -215,12 +283,12 @@ make
 ```
 5. To evaluate spellchecker you can use ```evaluate/evaluate.py``` script:
 ```bash
-python evaluate/evalute.py -a alphabet_file.txt -jsp your_model.bin -mx 50000 your_test_data.txt
+python evaluate/evaluate.py -a alphabet_file.txt -jsp your_model.bin -mx 50000 your_test_data.txt
 ```
 6. You can use ```evaluate/generate_dataset.py``` to generate you train/test data. It supports txt files, [Leipzig Corpora Collection](http://wortschatz.uni-leipzig.de/en/download/) format and fb2 books.
 
 ## Download models
-Here is a few simple models. They trained on 300K news + 300k wikipedia sentences. We strongly recomend to train your own model, at least on a few million sentences to achieve better quality. See [Train](#train) secion above.
+Here is a few simple models. They trained on 300K news + 300k wikipedia sentences. We strongly recommend to train your own model, at least on a few million sentences to achieve better quality. See [Train](#train) section above.
 
  - [en.tar.gz](https://github.com/bakwc/JamSpell-models/raw/master/en.tar.gz) (35Mb)
  - [fr.tar.gz](https://github.com/bakwc/JamSpell-models/raw/master/fr.tar.gz) (31Mb)

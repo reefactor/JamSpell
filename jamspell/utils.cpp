@@ -1,11 +1,16 @@
 #include <fstream>
 #include <sstream>
-#include <codecvt>
 #include <chrono>
 #include <cassert>
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+
+#ifdef USE_BOOST_CONVERT
+    #include <boost/locale/encoding_utf.hpp>
+#else
+    #include <codecvt>
+#endif
 
 #include "utils.hpp"
 
@@ -19,6 +24,11 @@ std::string LoadFile(const std::string& fileName) {
     std::ostringstream out;
     out << in.rdbuf();
     return out.str();
+}
+
+void SaveFile(const std::string& fileName, const std::string& data) {
+    std::ofstream out(fileName, std::ios::binary);
+    out << data;
 }
 
 TTokenizer::TTokenizer()
@@ -99,14 +109,24 @@ const std::unordered_set<wchar_t>& TTokenizer::GetAlphabet() const {
 }
 
 std::wstring UTF8ToWide(const std::string& text) {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-    return converter.from_bytes(text);;
+#ifdef USE_BOOST_CONVERT
+    using boost::locale::conv::utf_to_utf;
+    return utf_to_utf<wchar_t>(text.c_str(), text.c_str() + text.size());
+#else
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t, 0x10ffff, std::little_endian>> converter;
+    return converter.from_bytes(text);
+#endif
 }
 
 std::string WideToUTF8(const std::wstring& text) {
-    using convert_type = std::codecvt_utf8<wchar_t>;
+#ifdef USE_BOOST_CONVERT
+    using boost::locale::conv::utf_to_utf;
+    return utf_to_utf<char>(text.c_str(), text.c_str() + text.size());
+#else
+    using convert_type = std::codecvt_utf8<wchar_t, 0x10ffff, std::little_endian>;
     std::wstring_convert<convert_type, wchar_t> converter;
     return converter.to_bytes(text);
+#endif
 }
 
 uint64_t GetCurrentTimeMs() {
@@ -136,5 +156,9 @@ uint16_t CityHash16(const std::string& str) {
     return hash % std::numeric_limits<uint16_t>::max();
 }
 
+uint16_t CityHash16(const char* str, size_t size) {
+    uint32_t hash = CityHash32(str, size);
+    return hash % std::numeric_limits<uint16_t>::max();
+}
 
 } // NJamSpell
